@@ -1,108 +1,161 @@
-#! /bin/bash
-version_app=0.0.1
+#!/bin/bash
 
-function init(){
-    clear
-    echo
-    sleep 1
-    echo "Initializing program .."
-    sleep 1
-}
+version_app="0.0.1"
 
-function create_file() {
+create_file() {
+    local file_name=$1
 
-    read -p "Enter file name: " file_name
-    echo "Creating file $file_name"
-    
-    if [[ -f "$file_name" ]]
-    then
-       echo "$file_name already exist"
-       sleep 1
-       read -p "Do you want to overwrite $file_name? enter [y]: " choice
-       if [[ $choice == "y" ]]
-       then
-          touch "$file_name"
-          echo "name | user name | password | role" > "$file_name"
-          sleep 1
-          echo "$file_name has been overwritten"
-       else
-          read -p "Enter new file name : " new_file_name
-          touch $new_file_name
-          echo "name | user name | password | role" > "$new_file_name"
-          sleep 1
-          echo "$new_file_name has been created"
-       fi
-    else
-       echo "Creating credential file $file_name"
-       sleep 1
-       touch "$file_name"
-       echo "name | user name | password | role" > "$file_name"
-       sleep 1
-       echo "$file_name has been created"
+    echo "Creating file: $file_name"
+
+    if [[ -f "$file_name" ]]; then
+        echo "$file_name already exists"
+        return 1
     fi
 
-    # echo "name | user name | password | role" > "$file_name"
-    # sleep 1
-    # echo "$file_name has been created"
+    echo "name | user name | password | role" > "$file_name"
+    echo "$file_name created successfully"
 }
 
-menu(){
-    echo "-----------------------------"
-    echo "-    Credential Manager     -"
-    echo "-    $version_app                  -"
-    echo "-----------------------------"
-    echo "- 1. Create file            -"
-    echo "- 2. Update credential      -"
-    echo "- 3. Delete credential      -"
-    echo "- 4. Search credential      -"
-    echo "- 5. List credential        -"
-    echo "- 6. Exit                   -"
-    echo "-----------------------------"
-    read -p "Enter choice: " user_select
-    echo "-----------------------------"
+add_credential() {
+    local file_name=$1
+    local name=$2
+    local username=$3
+    local password=$4
+    local role=$5
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "$file_name does not exist"
+        return 1
+    fi
+
+    # Prevent duplicate credential names
+    if grep -q "^$name |" "$file_name"; then
+        echo "Credential '$name' already exists."
+        return 1
+    fi
+
+    echo "$name | $username | $password | $role" >> "$file_name"
+    echo "Credential '$name' added successfully."
+}
+
+update_credential() {
+    local file_name=$1
+    local credential_name=$2
+    local username=$3
+    local password=$4
+    local role=$5
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "$file_name does not exist"
+        return 1
+    fi
+
+    if grep -q "^$credential_name |" "$file_name"; then
+        sed -i.bak "s/^$credential_name |.*/$credential_name | $username | $password | $role/" "$file_name"
+        rm "$file_name.bak"
+        echo "$credential_name updated"
+    else
+        echo "$credential_name not found"
+        return 1
+    fi
+}
+
+
+delete_credential() {
+    local file_name=$1
+    local credential_name=$2
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "$file_name does not exist"
+        return 1
+    fi
+
+    if grep -q "^$credential_name |" "$file_name"; then
+        sed -i.bak "/^$credential_name |/d" "$file_name"
+        rm "$file_name.bak"
+        echo "$credential_name deleted"
+    else
+        echo "$credential_name not found"
+    fi
+}
+
+
+search_credential() {
+    local file_name=$1
+    local credential_name=$2
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "$file_name does not exist"
+        return 1
+    fi
+
+    result=$(grep "^$credential_name |" "$file_name")
+
+    if [[ -n "$result" ]]; then
+        echo "$result"
+    else
+        echo "$credential_name not found"
+    fi
+}
+
+
+list_credential() {
+    local file_name=$1
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "$file_name does not exist"
+        return 1
+    fi
+
+    echo "Credentials:"
+    cat "$file_name"
+}
+
+show_help() {
+    echo "Credential Manager v$version_app"
+    echo
+    echo "Usage:"
+    echo "  $0 create <file>"
+    echo "  $0 add <file> <name> <username> <password> <role>"
+    echo "  $0 update <file> <name> <username> <password> <role>"
+    echo "  $0 delete <file> <name>"
+    echo "  $0 search <file> <name>"
+    echo "  $0 list <file>"
 }
 
 main() {
-    init
-    clear
-    while true
-    do
-        menu
-        case $user_select in
-            "1" ) 
-                echo "Creating credential file..."
-                sleep 1
-                create_file
-                ;;
-            "2" )
-                echo "Testng updating file..."
-                sleep 1
+
+    command=$1
+
+    case "$command" in
+        create)
+            create_file "$2"
             ;;
-            "3" )
-                echo "Testng deleting file..."
-                sleep 1
+
+        add)
+            add_credential "$2" "$3" "$4" "$5" "$6"
             ;;
-            "4" ) 
-                echo "Testng searching file..."
-                sleep 1
+
+        update)
+            update_credential "$2" "$3" "$4" "$5" "$6"
             ;;
-            "5" ) 
-                echo "Testng display file..."
-                sleep 1
+
+        delete)
+            delete_credential "$2" "$3"
             ;;
-            "6" ) 
-                echo "Exit app.."; exit 0
+
+        search)
+            search_credential "$2" "$3"
             ;;
-            * ) 
-                echo "Invalid input"
-                sleep 1
+
+        list)
+            list_credential "$2"
             ;;
-        esac
-        
-        echo ""
-        read -p "Press enter to continue.."
-        clear
-    done
+
+        *)
+            show_help
+            ;;
+    esac
 }
 
-main
+main "$@"
