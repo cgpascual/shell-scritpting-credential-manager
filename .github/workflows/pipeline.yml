@@ -1,0 +1,63 @@
+name: Credential Manager CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+
+  test:
+
+    name: Run Bats Tests
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Install Bats
+        run: |
+          sudo apt update
+          sudo apt install -y bats
+
+
+      - name: Run Bash tests
+        run: |
+          bats tests/*.bats
+
+
+
+  docker:
+
+    name: Build Docker Image
+
+    needs: test
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Build Docker image
+        run: |
+          docker build \
+          -t credential-manager:0.0.1 .
+
+
+      - name: Test Docker container
+        run: |
+          docker run --rm credential-manager:0.0.1

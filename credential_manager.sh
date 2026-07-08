@@ -1,111 +1,183 @@
 #!/bin/bash
 
-version_app="0.0.1"
+validate_file() {
 
-create_file() {
     local file_name=$1
 
-    echo "Creating file: $file_name"
+    if [[ -z "$file_name" ]]; then
+        echo "Error: filename required"
+        return 1
+    fi
+
+    if [[ ! -f "$file_name" ]]; then
+        echo "Error: $file_name does not exist"
+        return 1
+    fi
+
+    return 0
+}
+
+create_file() {
+
+    local file_name=$1
+
+
+    if [[ -z "$file_name" ]]; then
+        echo "Error: filename required"
+        return 1
+    fi
+
 
     if [[ -f "$file_name" ]]; then
         echo "$file_name already exists"
         return 1
     fi
 
+
     echo "name | user name | password | role" > "$file_name"
+
     echo "$file_name created successfully"
 }
 
+
 add_credential() {
+
     local file_name=$1
     local name=$2
     local username=$3
     local password=$4
     local role=$5
 
-    if [[ ! -f "$file_name" ]]; then
-        echo "$file_name does not exist"
+
+    validate_file "$file_name" || return 1
+
+
+    if [[ -z "$name" || -z "$username" || -z "$password" || -z "$role" ]]; then
+        echo "Error: missing credential information"
         return 1
     fi
 
-    # Prevent duplicate credential names
+
     if grep -q "^$name |" "$file_name"; then
         echo "Credential '$name' already exists."
         return 1
     fi
 
+
     echo "$name | $username | $password | $role" >> "$file_name"
+
     echo "Credential '$name' added successfully."
 }
 
 update_credential() {
+
     local file_name=$1
     local credential_name=$2
     local username=$3
     local password=$4
     local role=$5
 
-    if [[ ! -f "$file_name" ]]; then
-        echo "$file_name does not exist"
+
+    validate_file "$file_name" || return 1
+
+
+    if [[ -z "$credential_name" || -z "$username" || -z "$password" || -z "$role" ]]; then
+        echo "Error: missing credential information"
         return 1
     fi
 
+
     if grep -q "^$credential_name |" "$file_name"; then
-        sed -i.bak "s/^$credential_name |.*/$credential_name | $username | $password | $role/" "$file_name"
+
+        sed -i.bak \
+        "s/^$credential_name |.*/$credential_name | $username | $password | $role/" \
+        "$file_name"
+
         rm "$file_name.bak"
+
         echo "$credential_name updated"
+
     else
+
         echo "$credential_name not found"
         return 1
+
     fi
 }
 
 
 delete_credential() {
+
     local file_name=$1
     local credential_name=$2
 
-    if [[ ! -f "$file_name" ]]; then
-        echo "$file_name does not exist"
+
+    validate_file "$file_name" || return 1
+
+
+    if [[ -z "$credential_name" ]]; then
+        echo "Error: credential name required"
         return 1
     fi
 
+
     if grep -q "^$credential_name |" "$file_name"; then
+
         sed -i.bak "/^$credential_name |/d" "$file_name"
+
         rm "$file_name.bak"
+
         echo "$credential_name deleted"
+
     else
+
         echo "$credential_name not found"
+        return 1
+
     fi
 }
 
 
 search_credential() {
+
     local file_name=$1
     local credential_name=$2
 
-    if [[ ! -f "$file_name" ]]; then
-        echo "$file_name does not exist"
+
+    validate_file "$file_name" || return 1
+
+
+    if [[ -z "$credential_name" ]]; then
+        echo "Error: credential name required"
         return 1
     fi
 
+
+    local result
+
     result=$(grep "^$credential_name |" "$file_name")
 
+
     if [[ -n "$result" ]]; then
+
         echo "$result"
+
     else
+
         echo "$credential_name not found"
+        return 1
+
     fi
 }
 
 
 list_credential() {
+
     local file_name=$1
 
-    if [[ ! -f "$file_name" ]]; then
-        echo "$file_name does not exist"
-        return 1
-    fi
+
+    validate_file "$file_name" || return 1
+
 
     echo "Credentials:"
     cat "$file_name"
