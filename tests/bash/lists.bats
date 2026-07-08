@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load test_helper
+load ../helpers/test_helper.sh
 
 setup() {
     setup_sample_file
