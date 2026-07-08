@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load ../helpers/test_helper.sh
+load ../helpers/test_helper
 
 setup() {
     setup_empty_file
