@@ -12,55 +12,43 @@ on:
       - main
       - dev
 
-
 jobs:
 
-  test:
-
-    name: Run Bats Tests
-
+  bash-tests:
+    name: Run Bash Tests
     runs-on: ubuntu-latest
 
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
 
       - name: Install Bats
         run: |
-          sudo apt update
-          sudo apt install -y bats
-
+          sudo apt-get update
+          sudo apt-get install -y bats
 
       - name: Run Bash tests
         run: |
-          bats tests/*.bats
+          bats tests/bash
 
-
-
-  docker:
-
-    name: Build Docker Image
-
-    needs: test
-
+  docker-tests:
+    name: Build and Test Docker
+    needs: bash-tests
     runs-on: ubuntu-latest
 
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
 
       - name: Build Docker image
         run: |
-          docker build \
-          -t credential-manager:0.0.1 .
+          docker build -t credential-manager:0.0.1 .
 
-
-      - name: Test Docker container
+      - name: Run Docker tests
         run: |
-          docker run --rm credential-manager:0.0.1
+          bats tests/docker
